@@ -1,0 +1,958 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Scanner — Explicit Language Detector</title>
+<style>
+  :root{
+    --ink:#1b1b1f;
+    --paper:#f6f4ef;
+    --panel:#ffffff;
+    --rule:#d8d4c8;
+    --flag-low:#b8860b;
+    --flag-mid:#c1440e;
+    --flag-high:#8b1e1e;
+    --accent:#2f5233;
+    --mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --serif: 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+ 
+  * { box-sizing: border-box; }
+ 
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+  }
+ 
+  .masthead{
+    border-bottom:3px solid var(--ink);
+    padding:28px 24px 18px;
+    background:var(--paper);
+  }
+  .masthead-inner{
+    max-width:980px;
+    margin:0 auto;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .masthead h1{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:2.1rem;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .masthead .tag{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.12em;
+    color:#6b6b62;
+  }
+  .masthead .eyebrow{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:4px;
+  }
+ 
+  main{
+    max-width:980px;
+    margin:0 auto;
+    padding:32px 24px 80px;
+  }
+ 
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    border-radius:2px;
+  }
+ 
+  .input-section{
+    padding:24px;
+    margin-bottom:24px;
+  }
+ 
+  .input-tabs{
+    display:flex;
+    gap:0;
+    margin-bottom:16px;
+    border-bottom:1px solid var(--rule);
+  }
+  .tab-btn{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    background:none;
+    border:none;
+    padding:10px 18px 10px 0;
+    margin-right:18px;
+    color:#8a8a80;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transition:color .15s;
+  }
+  .tab-btn.active{
+    color:var(--ink);
+    border-bottom-color:var(--accent);
+  }
+ 
+  textarea{
+    width:100%;
+    min-height:220px;
+    padding:16px;
+    font-family:var(--mono);
+    font-size:0.88rem;
+    line-height:1.6;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    resize:vertical;
+    background:#fdfcf9;
+    color:var(--ink);
+  }
+  textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+ 
+  .drop-zone{
+    border:2px dashed var(--rule);
+    border-radius:2px;
+    padding:36px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .drop-zone.drag{
+    border-color:var(--accent);
+    background:#f0f3ee;
+  }
+  .drop-zone p{ margin:4px 0; }
+  .drop-zone .big{ font-family:var(--serif); font-size:1.05rem; }
+  .drop-zone .small{ font-family:var(--mono); font-size:0.72rem; color:#8a8a80; text-transform:uppercase; letter-spacing:0.08em; }
+  #fileInput{ display:none; }
+  .file-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:0.8rem;
+    background:#eef0e9;
+    border:1px solid var(--rule);
+    padding:6px 12px;
+    margin-top:12px;
+    border-radius:2px;
+  }
+  .file-chip button{
+    background:none; border:none; cursor:pointer; color:var(--flag-high); font-weight:700;
+  }
+ 
+  .controls-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:16px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+ 
+  .word-count{
+    font-family:var(--mono);
+    font-size:0.78rem;
+    color:#8a8a80;
+  }
+ 
+  .scan-btn{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:13px 28px;
+    cursor:pointer;
+    border-radius:2px;
+    transition:background .15s;
+  }
+  .scan-btn:hover{ background:var(--accent); }
+  .scan-btn:disabled{ background:#b8b6ac; cursor:not-allowed; }
+ 
+  .options-row{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    font-family:var(--mono);
+    font-size:0.76rem;
+    color:#555;
+  }
+  .options-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+  }
+ 
+  /* results */
+  .results{ display:none; }
+  .results.show{ display:block; }
+ 
+  .summary-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--rule);
+    border:1px solid var(--rule);
+    margin-bottom:24px;
+  }
+  .stat{
+    background:var(--panel);
+    padding:20px 16px;
+    text-align:center;
+  }
+  .stat .num{
+    font-family:var(--serif);
+    font-size:2rem;
+    font-weight:700;
+    line-height:1;
+  }
+  .stat .num.clean{ color:var(--accent); }
+  .stat .num.flagged{ color:var(--flag-high); }
+  .stat .label{
+    font-family:var(--mono);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:#8a8a80;
+    margin-top:6px;
+  }
+ 
+  .verdict-banner{
+    padding:16px 20px;
+    margin-bottom:24px;
+    border-left:4px solid var(--accent);
+    background:#eef3ea;
+    font-family:var(--serif);
+    font-size:1.05rem;
+  }
+  .verdict-banner.warn{
+    border-left-color:var(--flag-mid);
+    background:#fbeee5;
+  }
+  .verdict-banner.severe{
+    border-left-color:var(--flag-high);
+    background:#f8e8e5;
+  }
+ 
+  .section-title{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:#8a8a80;
+    margin:32px 0 12px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--rule);
+  }
+ 
+  .category-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:12px;
+    margin-bottom:8px;
+  }
+  .category-card{
+    background:var(--panel);
+    border:1px solid var(--rule);
+    padding:14px 16px;
+    border-radius:2px;
+  }
+  .category-card .cat-name{
+    font-family:var(--sans);
+    font-weight:600;
+    font-size:0.88rem;
+  }
+  .category-card .cat-count{
+    font-family:var(--mono);
+    font-size:1.4rem;
+    color:var(--flag-mid);
+    margin-top:4px;
+  }
+  .category-card .cat-severity{
+    font-family:var(--mono);
+    font-size:0.65rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:#8a8a80;
+    margin-top:2px;
+  }
+ 
+  table.hit-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.85rem;
+    background:var(--panel);
+  }
+  table.hit-table th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:0.68rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:#8a8a80;
+    padding:10px 12px;
+    border-bottom:1px solid var(--ink);
+  }
+  table.hit-table td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  table.hit-table tr:hover td{ background:#faf9f5; }
+  .term-cell{
+    font-family:var(--mono);
+    font-weight:700;
+  }
+  .sev-badge{
+    display:inline-block;
+    padding:2px 8px;
+    border-radius:10px;
+    font-family:var(--mono);
+    font-size:0.65rem;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:#fff;
+  }
+  .sev-1{ background:var(--flag-low); }
+  .sev-2{ background:var(--flag-mid); }
+  .sev-3{ background:var(--flag-high); }
+ 
+  .locations{
+    font-family:var(--mono);
+    font-size:0.76rem;
+    color:#555;
+  }
+  .loc-tag{
+    display:inline-block;
+    background:#eee9dd;
+    padding:1px 6px;
+    border-radius:2px;
+    margin:1px 3px 1px 0;
+    cursor:pointer;
+  }
+  .loc-tag:hover{ background:var(--accent); color:#fff; }
+ 
+  .context-snippet{
+    font-family:var(--mono);
+    font-size:0.72rem;
+    color:#777;
+    max-width:340px;
+    display:block;
+    margin-top:3px;
+  }
+  .context-snippet mark{
+    background:#f6d3c4;
+    color:var(--flag-high);
+    font-weight:700;
+    padding:0 2px;
+  }
+ 
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    font-family:var(--serif);
+    color:var(--accent);
+    font-size:1.1rem;
+  }
+ 
+  .export-row{
+    display:flex;
+    gap:10px;
+    margin-top:24px;
+    flex-wrap:wrap;
+  }
+  .ghost-btn{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    background:none;
+    border:1px solid var(--ink);
+    padding:9px 16px;
+    cursor:pointer;
+    border-radius:2px;
+  }
+  .ghost-btn:hover{ background:var(--ink); color:var(--paper); }
+ 
+  .footnote{
+    font-family:var(--mono);
+    font-size:0.7rem;
+    color:#8a8a80;
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1px solid var(--rule);
+    line-height:1.7;
+  }
+ 
+  .loading{
+    display:none;
+    align-items:center;
+    gap:10px;
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:var(--accent);
+    margin-top:12px;
+  }
+  .loading.show{ display:flex; }
+  .spinner{
+    width:14px; height:14px;
+    border:2px solid var(--rule);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+ 
+  @media (max-width:640px){
+    .summary-strip{ grid-template-columns:repeat(2,1fr); }
+    .masthead h1{ font-size:1.5rem; }
+    table.hit-table{ font-size:0.76rem; }
+    .context-snippet{ max-width:100%; }
+  }
+</style>
+</head>
+<body>
+ 
+<div class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <div class="eyebrow">Editorial / Moderation Utility</div>
+      <h1>Content Scanner</h1>
+    </div>
+    <div class="tag">Explicit language detection · runs entirely in your browser</div>
+  </div>
+</div>
+ 
+<main>
+  <div class="panel input-section">
+    <div class="input-tabs">
+      <button class="tab-btn active" data-tab="paste">Paste text</button>
+      <button class="tab-btn" data-tab="file">Upload file</button>
+    </div>
+ 
+    <div id="paste-tab">
+      <textarea id="textInput" placeholder="Paste your text here — up to ~100,000 words. This never leaves your device; scanning happens locally in the browser."></textarea>
+    </div>
+ 
+    <div id="file-tab" style="display:none;">
+      <div class="drop-zone" id="dropZone">
+        <p class="big">Drop a .txt file here, or click to browse</p>
+        <p class="small">Plain text files (.txt) — up to a few MB</p>
+        <input type="file" id="fileInput" accept=".txt,text/plain">
+      </div>
+      <div id="fileChipHolder"></div>
+    </div>
+ 
+    <div class="controls-row">
+      <div class="word-count" id="wordCount">0 words</div>
+      <button class="scan-btn" id="scanBtn">Scan text</button>
+    </div>
+ 
+    <div class="options-row">
+      <label><input type="checkbox" id="optWholeWord" checked> Whole-word matching only</label>
+      <label><input type="checkbox" id="optContext" checked> Show context snippets</label>
+      <label><input type="checkbox" id="optFuzzy"> Catch leetspeak / spaced-out variants (e.g. f-u-c-k, fvck)</label>
+    </div>
+ 
+    <div class="loading" id="loadingRow"><div class="spinner"></div> Scanning…</div>
+  </div>
+ 
+  <div class="results" id="results">
+ 
+    <div class="verdict-banner" id="verdictBanner"></div>
+ 
+    <div class="summary-strip">
+      <div class="stat">
+        <div class="num" id="statTotalWords">0</div>
+        <div class="label">Total words</div>
+      </div>
+      <div class="stat">
+        <div class="num flagged" id="statFlaggedCount">0</div>
+        <div class="label">Flagged instances</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statUniqueTerms">0</div>
+        <div class="label">Unique terms found</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="statDensity">0%</div>
+        <div class="label">Flag density</div>
+      </div>
+    </div>
+ 
+    <div class="section-title">By category</div>
+    <div class="category-grid" id="categoryGrid"></div>
+ 
+    <div class="section-title">Detailed findings</div>
+    <table class="hit-table" id="hitTable">
+      <thead>
+        <tr>
+          <th>Term</th>
+          <th>Category</th>
+          <th>Severity</th>
+          <th>Count</th>
+          <th>Locations (word #)</th>
+        </tr>
+      </thead>
+      <tbody id="hitTableBody"></tbody>
+    </table>
+ 
+    <div class="export-row">
+      <button class="ghost-btn" id="exportJson">Export JSON report</button>
+      <button class="ghost-btn" id="exportCsv">Export CSV</button>
+      <button class="ghost-btn" id="clearBtn">Clear & start over</button>
+    </div>
+ 
+    <div class="footnote">
+      Detection is pattern-based and heuristic. It may miss creative misspellings, produce false positives on legitimate words (e.g. clinical or historical terms), and does not understand context or intent. Use this as a first-pass flagging aid, not a definitive judgment — a human review is recommended for anything borderline. All processing happens locally in your browser; no text is uploaded anywhere.
+    </div>
+  </div>
+ 
+  <div class="empty-state" id="emptyState">
+    Paste text or upload a file above, then run a scan to see results here.
+  </div>
+ 
+</main>
+ 
+<script>
+(function(){
+ 
+  // ---------------------------------------------------------------
+  // Detection wordlist, organized by category with severity tiers.
+  // Severity: 1 = mild profanity, 2 = strong profanity/crude sexual,
+  // 3 = explicit sexual / slur-level severity.
+  // Each entry: term -> {category, severity}
+  // This list is intentionally broad to catch common explicit terms,
+  // their common variants/plurals, and frequent slurs.
+  // ---------------------------------------------------------------
+  const WORDLIST = buildWordlist();
+ 
+  function buildWordlist(){
+    const list = {};
+    const add = (words, category, severity) => {
+      words.forEach(w => { list[w.toLowerCase()] = {category, severity}; });
+    };
+ 
+    add(["damn","hell","crap","piss","bastard","bitchy"], "Mild profanity", 1);
+    add(["ass","asshole","dumbass","jackass","badass","hardass"], "Crude / vulgar", 2);
+    add(["shit","shitty","bullshit","horseshit","shithead"], "Strong profanity", 2);
+    add(["fuck","fucking","fucked","fucker","motherfucker","fuckup","fuckface","clusterfuck"], "Strong profanity", 3);
+    add(["bitch","bitches","son of a bitch"], "Strong profanity", 2);
+    add(["cunt","twat"], "Explicit / vulgar", 3);
+    add(["dick","dickhead","prick","cock","cockhead","schlong"], "Crude sexual / anatomical", 2);
+    add(["pussy","vagina","penis","genitals","testicle","testicles","scrotum","clitoris","labia"], "Explicit anatomical", 2);
+    add(["boob","boobs","tit","tits","titty","titties","nipple","nipples"], "Crude sexual", 2);
+    add(["sex","sexual","sexually","intercourse","orgasm","orgasmic","ejaculate","ejaculation","masturbate","masturbation","masturbating"], "Explicit sexual", 3);
+    add(["blowjob","handjob","deepthroat","anal","rimjob","fellatio","cunnilingus"], "Explicit sexual act", 3);
+    add(["porn","pornographic","pornography","xxx","nsfw"], "Explicit / adult content", 2);
+    add(["whore","slut","hoe","skank"], "Sexual slur / demeaning", 3);
+    add(["rape","rapist","molest","molester","molestation"], "Sexual violence", 3);
+    add(["nigger","nigga","chink","spic","kike","gook","wetback","coon","towelhead","raghead"], "Racial slur", 3);
+    add(["faggot","fag","dyke","tranny"], "Homophobic / transphobic slur", 3);
+    add(["retard","retarded","spastic","cripple"], "Ableist slur", 2);
+    add(["nazi","hitler"], "Extremist reference", 1);
+    add(["kill yourself","kys"], "Self-harm incitement", 3);
+    add(["cum","jizz","semen"], "Explicit sexual fluid", 2);
+    add(["orgy","gangbang","threesome"], "Explicit sexual scenario", 2);
+    add(["bdsm","bondage","dominatrix","fetish"], "Explicit sexual theme", 1);
+    add(["hentai","erotica","erotic"], "Adult content reference", 1);
+    add(["prostitute","prostitution","hooker","pimp"], "Sexual commerce", 1);
+ 
+    return list;
+  }
+ 
+  // Build a lookup of multi-word phrases separately since they need different matching
+  const PHRASES = Object.keys(WORDLIST).filter(k => k.includes(" "));
+  const SINGLE_WORDS = Object.keys(WORDLIST).filter(k => !k.includes(" "));
+ 
+  // Leetspeak / obfuscation normalization map
+  const LEET_MAP = { "0":"o","1":"i","3":"e","4":"a","5":"s","7":"t","@":"a","$":"s","!":"i" };
+ 
+  function normalizeLeet(word){
+    let out = "";
+    for (const ch of word.toLowerCase()){
+      out += LEET_MAP[ch] !== undefined ? LEET_MAP[ch] : ch;
+    }
+    return out;
+  }
+ 
+  function stripSeparators(word){
+    // collapse things like f-u-c-k or f.u.c.k or f_u_c_k
+    return word.replace(/[\-\._\*]/g, "");
+  }
+ 
+  // ---------------- UI wiring ----------------
+ 
+  const textInput = document.getElementById('textInput');
+  const fileInput = document.getElementById('fileInput');
+  const dropZone = document.getElementById('dropZone');
+  const fileChipHolder = document.getElementById('fileChipHolder');
+  const wordCountEl = document.getElementById('wordCount');
+  const scanBtn = document.getElementById('scanBtn');
+  const loadingRow = document.getElementById('loadingRow');
+  const results = document.getElementById('results');
+  const emptyState = document.getElementById('emptyState');
+ 
+  let uploadedFileText = null;
+  let uploadedFileName = null;
+  let lastReport = null;
+ 
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.dataset.tab;
+      document.getElementById('paste-tab').style.display = tab === 'paste' ? 'block' : 'none';
+      document.getElementById('file-tab').style.display = tab === 'file' ? 'block' : 'none';
+      updateWordCount();
+    });
+  });
+ 
+  // Word count live update
+  textInput.addEventListener('input', updateWordCount);
+ 
+  function currentText(){
+    if (document.getElementById('file-tab').style.display === 'block' && uploadedFileText){
+      return uploadedFileText;
+    }
+    return textInput.value;
+  }
+ 
+  function updateWordCount(){
+    const t = currentText();
+    const words = t.trim().length ? t.trim().split(/\s+/).length : 0;
+    wordCountEl.textContent = words.toLocaleString() + " words" + (words > 100000 ? "  (exceeds 100k — will still scan, but may be slow)" : "");
+  }
+ 
+  // Drop zone
+  dropZone.addEventListener('click', ()=> fileInput.click());
+  dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('drag'); });
+  dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag'));
+  dropZone.addEventListener('drop', e=>{
+    e.preventDefault();
+    dropZone.classList.remove('drag');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e=>{
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+ 
+  function handleFile(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      uploadedFileText = e.target.result;
+      uploadedFileName = file.name;
+      fileChipHolder.innerHTML = '';
+      const chip = document.createElement('div');
+      chip.className = 'file-chip';
+      chip.innerHTML = `📄 ${file.name} <button id="removeFile">✕</button>`;
+      fileChipHolder.appendChild(chip);
+      document.getElementById('removeFile').addEventListener('click', ()=>{
+        uploadedFileText = null; uploadedFileName = null;
+        fileChipHolder.innerHTML = '';
+        updateWordCount();
+      });
+      updateWordCount();
+    };
+    reader.readAsText(file);
+  }
+ 
+  // Scan button
+  scanBtn.addEventListener('click', ()=>{
+    const text = currentText();
+    if (!text || !text.trim()){
+      alert("Please paste some text or upload a file first.");
+      return;
+    }
+    loadingRow.classList.add('show');
+    scanBtn.disabled = true;
+    // defer to let UI paint the loading state before heavy work
+    setTimeout(()=>{
+      const report = scanText(text, {
+        wholeWord: document.getElementById('optWholeWord').checked,
+        context: document.getElementById('optContext').checked,
+        fuzzy: document.getElementById('optFuzzy').checked
+      });
+      lastReport = report;
+      renderReport(report);
+      loadingRow.classList.remove('show');
+      scanBtn.disabled = false;
+      results.classList.add('show');
+      emptyState.style.display = 'none';
+      results.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 30);
+  });
+ 
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    textInput.value = '';
+    uploadedFileText = null;
+    fileChipHolder.innerHTML = '';
+    updateWordCount();
+    results.classList.remove('show');
+    emptyState.style.display = 'block';
+  });
+ 
+  // ---------------- Core scan logic ----------------
+ 
+  function scanText(text, opts){
+    const totalWords = text.trim().length ? text.trim().split(/\s+/).length : 0;
+ 
+    // Tokenize with positions: array of {word, index (word number), rawStart}
+    const tokenRegex = /\S+/g;
+    const tokens = [];
+    let m;
+    let wordIdx = 0;
+    while ((m = tokenRegex.exec(text)) !== null){
+      wordIdx++;
+      tokens.push({ raw: m[0], index: wordIdx, charStart: m.index });
+    }
+ 
+    const hits = {}; // term -> { category, severity, count, locations: [{wordIndex, snippet}] }
+ 
+    function cleanToken(raw){
+      // strip surrounding punctuation, keep internal letters
+      return raw.replace(/^[^\w]+|[^\w]+$/g, "");
+    }
+ 
+    function registerHit(term, wordIndex, snippet){
+      const meta = WORDLIST[term];
+      if (!meta) return;
+      if (!hits[term]) hits[term] = { category: meta.category, severity: meta.severity, count: 0, locations: [] };
+      hits[term].count++;
+      if (hits[term].locations.length < 500){ // cap for performance/display
+        hits[term].locations.push({ wordIndex, snippet });
+      }
+    }
+ 
+    function makeSnippet(centerTokenPos){
+      if (!opts.context) return "";
+      const start = Math.max(0, centerTokenPos - 6);
+      const end = Math.min(tokens.length, centerTokenPos + 7);
+      const parts = tokens.slice(start, end).map((t,i)=>{
+        const actualPos = start + i;
+        return actualPos === centerTokenPos ? `<mark>${escapeHtml(t.raw)}</mark>` : escapeHtml(t.raw);
+      });
+      return parts.join(" ");
+    }
+ 
+    // single-word scan
+    for (let i = 0; i < tokens.length; i++){
+      const tok = tokens[i];
+      let cleaned = cleanToken(tok.raw).toLowerCase();
+      if (!cleaned) continue;
+ 
+      let matched = null;
+ 
+      if (SINGLE_WORDS.includes(cleaned)){
+        matched = cleaned;
+      } else if (opts.fuzzy) {
+        const noSep = stripSeparators(cleaned);
+        const leetNorm = normalizeLeet(noSep);
+        if (SINGLE_WORDS.includes(leetNorm)){
+          matched = leetNorm;
+        } else if (!opts.wholeWord) {
+          // substring fallback for fuzzy+non-whole-word mode
+          for (const w of SINGLE_WORDS){
+            if (leetNorm.includes(w)){ matched = w; break; }
+          }
+        }
+      } else if (!opts.wholeWord) {
+        for (const w of SINGLE_WORDS){
+          if (cleaned.includes(w)){ matched = w; break; }
+        }
+      }
+ 
+      if (matched){
+        registerHit(matched, tok.index, makeSnippet(i));
+      }
+    }
+ 
+    // phrase scan (simple substring search over the raw text, case-insensitive)
+    const lowerText = text.toLowerCase();
+    PHRASES.forEach(phrase=>{
+      let searchFrom = 0;
+      let idx;
+      while ((idx = lowerText.indexOf(phrase, searchFrom)) !== -1){
+        // find approx word index by counting spaces before idx
+        const approxWordIndex = text.slice(0, idx).trim().length ? text.slice(0, idx).trim().split(/\s+/).length + 1 : 1;
+        const snippetStart = Math.max(0, idx - 40);
+        const snippetEnd = Math.min(text.length, idx + phrase.length + 40);
+        const rawSnippet = text.slice(snippetStart, snippetEnd);
+        const highlighted = escapeHtml(rawSnippet).replace(
+          new RegExp(escapeRegex(phrase), "i"),
+          match => `<mark>${match}</mark>`
+        );
+        registerHit(phrase, approxWordIndex, opts.context ? highlighted : "");
+        searchFrom = idx + phrase.length;
+      }
+    });
+ 
+    // Aggregate
+    const flaggedCount = Object.values(hits).reduce((a,h)=>a+h.count,0);
+    const uniqueTerms = Object.keys(hits).length;
+    const density = totalWords > 0 ? (flaggedCount / totalWords * 100) : 0;
+ 
+    // by category
+    const byCategory = {};
+    Object.entries(hits).forEach(([term,h])=>{
+      if (!byCategory[h.category]) byCategory[h.category] = { count:0, maxSeverity:0 };
+      byCategory[h.category].count += h.count;
+      byCategory[h.category].maxSeverity = Math.max(byCategory[h.category].maxSeverity, h.severity);
+    });
+ 
+    return {
+      totalWords,
+      flaggedCount,
+      uniqueTerms,
+      density,
+      hits,
+      byCategory,
+      fileName: uploadedFileName || null
+    };
+  }
+ 
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function escapeRegex(str){
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+ 
+  // ---------------- Rendering ----------------
+ 
+  function renderReport(report){
+    document.getElementById('statTotalWords').textContent = report.totalWords.toLocaleString();
+    document.getElementById('statFlaggedCount').textContent = report.flaggedCount.toLocaleString();
+    document.getElementById('statUniqueTerms').textContent = report.uniqueTerms.toLocaleString();
+    document.getElementById('statDensity').textContent = report.density.toFixed(3) + "%";
+ 
+    // verdict banner
+    const banner = document.getElementById('verdictBanner');
+    banner.classList.remove('warn','severe');
+    if (report.flaggedCount === 0){
+      banner.textContent = "No explicit or flagged language detected in this text.";
+    } else {
+      const hasSevere = Object.values(report.hits).some(h => h.severity === 3);
+      if (hasSevere || report.density > 1){
+        banner.classList.add('severe');
+        banner.textContent = `Flagged: ${report.flaggedCount} instance(s) across ${report.uniqueTerms} term(s), including high-severity explicit content.`;
+      } else {
+        banner.classList.add('warn');
+        banner.textContent = `Flagged: ${report.flaggedCount} instance(s) across ${report.uniqueTerms} term(s) of mild-to-moderate flagged language.`;
+      }
+    }
+ 
+    // category grid
+    const catGrid = document.getElementById('categoryGrid');
+    catGrid.innerHTML = '';
+    const sortedCats = Object.entries(report.byCategory).sort((a,b)=>b[1].count - a[1].count);
+    if (sortedCats.length === 0){
+      catGrid.innerHTML = '<div style="font-family:var(--mono);font-size:0.8rem;color:#8a8a80;">No categories triggered.</div>';
+    }
+    sortedCats.forEach(([cat, data])=>{
+      const card = document.createElement('div');
+      card.className = 'category-card';
+      const sevLabel = data.maxSeverity === 3 ? 'High severity' : data.maxSeverity === 2 ? 'Moderate' : 'Mild';
+      card.innerHTML = `
+        <div class="cat-name">${escapeHtml(cat)}</div>
+        <div class="cat-count">${data.count}</div>
+        <div class="cat-severity">${sevLabel}</div>
+      `;
+      catGrid.appendChild(card);
+    });
+ 
+    // detailed table
+    const tbody = document.getElementById('hitTableBody');
+    tbody.innerHTML = '';
+    const sortedHits = Object.entries(report.hits).sort((a,b)=> b[1].count - a[1].count);
+ 
+    if (sortedHits.length === 0){
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;font-family:var(--serif);color:var(--accent);">Clean — nothing matched.</td></tr>`;
+    }
+ 
+    sortedHits.forEach(([term, h])=>{
+      const tr = document.createElement('tr');
+      const locTags = h.locations.slice(0, 30).map(loc => `<span class="loc-tag" title="${loc.snippet ? 'hover snippet' : ''}">#${loc.wordIndex}</span>`).join('');
+      const moreCount = h.locations.length > 30 ? `<span style="color:#999;"> +${h.locations.length - 30} more</span>` : '';
+ 
+      let snippetsHtml = '';
+      if (document.getElementById('optContext').checked && h.locations.length){
+        const sampleSnippets = h.locations.slice(0,2).filter(l=>l.snippet).map(l=>`<span class="context-snippet">…${l.snippet}…</span>`).join('');
+        snippetsHtml = sampleSnippets;
+      }
+ 
+      tr.innerHTML = `
+        <td class="term-cell">${escapeHtml(term)}</td>
+        <td>${escapeHtml(h.category)}</td>
+        <td><span class="sev-badge sev-${h.severity}">${h.severity === 3 ? 'High' : h.severity === 2 ? 'Mod' : 'Mild'}</span></td>
+        <td>${h.count}</td>
+        <td class="locations">${locTags}${moreCount}${snippetsHtml}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+ 
+  // ---------------- Export ----------------
+ 
+  document.getElementById('exportJson').addEventListener('click', ()=>{
+    if (!lastReport) return;
+    const exportObj = {
+      fileName: lastReport.fileName,
+      totalWords: lastReport.totalWords,
+      flaggedCount: lastReport.flaggedCount,
+      uniqueTerms: lastReport.uniqueTerms,
+      densityPercent: lastReport.density,
+      byCategory: lastReport.byCategory,
+      hits: Object.fromEntries(Object.entries(lastReport.hits).map(([term,h])=>[
+        term, { category:h.category, severity:h.severity, count:h.count, locations: h.locations.map(l=>l.wordIndex) }
+      ]))
+    };
+    downloadBlob(JSON.stringify(exportObj, null, 2), 'content-scan-report.json', 'application/json');
+  });
+ 
+  document.getElementById('exportCsv').addEventListener('click', ()=>{
+    if (!lastReport) return;
+    let csv = "term,category,severity,count,word_positions\n";
+    Object.entries(lastReport.hits).forEach(([term,h])=>{
+      const positions = h.locations.map(l=>l.wordIndex).join(';');
+      csv += `"${term}","${h.category}",${h.severity},${h.count},"${positions}"\n`;
+    });
+    downloadBlob(csv, 'content-scan-report.csv', 'text/csv');
+  });
+ 
+  function downloadBlob(content, filename, type){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+ 
+  updateWordCount();
+})();
+</script>
+ 
+</body>
+</html>
