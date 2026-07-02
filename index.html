@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -553,30 +552,31 @@
       words.forEach(w => { list[w.toLowerCase()] = {category, severity}; });
     };
  
-    add(["damn","hell","crap","piss","bastard","bitchy"], "Mild profanity", 1);
-    add(["ass","asshole","dumbass","jackass","badass","hardass"], "Crude / vulgar", 2);
-    add(["shit","shitty","bullshit","horseshit","shithead"], "Strong profanity", 2);
-    add(["fuck","fucking","fucked","fucker","motherfucker","fuckup","fuckface","clusterfuck"], "Strong profanity", 3);
-    add(["bitch","bitches","son of a bitch"], "Strong profanity", 2);
+    add(["damn","hell","crap","piss","bastard","bitchy","jerk","douche","virgin","bra"], "Mild profanity", 1);
+    add(["ass","asshole","dumbass","jackass","badass","hardass","booty","pound"], "Crude / vulgar", 2);
+    add(["shit","shitty","bullshit","horseshit","shithead","bitch","bitches"], "Strong profanity", 2);
+    add(["fuck","fucking","fucked","fucker","motherfucker","fuckup","fuckface","clusterfuck","fuckin","fuckwad","fucks","fuckers","motherfuckers","cocksuckers"], "Strong profanity", 3);
     add(["cunt","twat"], "Explicit / vulgar", 3);
-    add(["dick","dickhead","prick","cock","cockhead","schlong"], "Crude sexual / anatomical", 2);
-    add(["pussy","vagina","penis","genitals","testicle","testicles","scrotum","clitoris","labia"], "Explicit anatomical", 2);
-    add(["boob","boobs","tit","tits","titty","titties","nipple","nipples"], "Crude sexual", 2);
-    add(["sex","sexual","sexually","intercourse","orgasm","orgasmic","ejaculate","ejaculation","masturbate","masturbation","masturbating"], "Explicit sexual", 3);
-    add(["blowjob","handjob","deepthroat","anal","rimjob","fellatio","cunnilingus"], "Explicit sexual act", 3);
-    add(["porn","pornographic","pornography","xxx","nsfw"], "Explicit / adult content", 2);
-    add(["whore","slut","hoe","skank"], "Sexual slur / demeaning", 3);
-    add(["rape","rapist","molest","molester","molestation"], "Sexual violence", 3);
+    add(["dick","dickhead","prick","cock","cockhead","schlong","dicks","dicking","balls","boner","hard on","erect","erection","shaft"], "Crude sexual / anatomical", 2);
+    add(["pussy","vagina","penis","genitals","testicle","testicles","scrotum","clitoris","labia","breast","breasts","nipple","nipples","clit","gonads","pubic","genital","vulva","vulvas","labiaplasty","penectomy","penoplasty","foreskin","smegma","testes","uterus","cervix","cervical","endometrium","fallopian","fallopian tube","ovary","ovaries","pubes","pubic hair","prostate","perineum"], "Explicit anatomical", 2);
+    add(["boob","boobs","tit","tits","titty","titties","booby","boobies","thrust","moan","sexy","lick","suck","stroke","lust"], "Crude sexual", 2);
+    add(["sex","sexual","sexually","intercourse","orgasm","orgasmic","ejaculate","ejaculation","masturbate","masturbation","masturbating","sexuality","arousal","libido","sensual","explicit","arouse","stimulate","stimulation","titillate","titillation","penetration","coitus","mutual masturbation","seduce","seduction","seductive","arousing","stimulating","titillating"], "Explicit sexual", 3);
+    add(["blowjob","handjob","deepthroat","anal","rimjob","fellatio","cunnilingus","oral","sodomize","sodomy","fornication","anilingus","autofellatio","tribadism","tribbing","scissoring","fisting"], "Explicit sexual act", 3);
+    add(["porn","pornographic","pornography","xxx","nsfw","child porn","child pornography","nude","nudity"], "Explicit / adult content", 2);
+    add(["whore","slut","hoe","skank","whorehouse","whoremonger"], "Sexual slur / demeaning", 3);
+    add(["rape","rapist","molest","molester","molestation","child molestation","sexual assault","sexual harassment","groping","fondling","sexual abuse"], "Sexual violence", 3);
     add(["nigger","nigga","chink","spic","kike","gook","wetback","coon","towelhead","raghead"], "Racial slur", 3);
-    add(["faggot","fag","dyke","tranny"], "Homophobic / transphobic slur", 3);
+    add(["faggot","fag","dyke","tranny","homo","homosexual","queer","twink","twinkie"], "Homophobic / transphobic slur", 3);
     add(["retard","retarded","spastic","cripple"], "Ableist slur", 2);
     add(["nazi","hitler"], "Extremist reference", 1);
     add(["kill yourself","kys"], "Self-harm incitement", 3);
-    add(["cum","jizz","semen"], "Explicit sexual fluid", 2);
-    add(["orgy","gangbang","threesome"], "Explicit sexual scenario", 2);
-    add(["bdsm","bondage","dominatrix","fetish"], "Explicit sexual theme", 1);
-    add(["hentai","erotica","erotic"], "Adult content reference", 1);
-    add(["prostitute","prostitution","hooker","pimp"], "Sexual commerce", 1);
+    add(["cum","jizz","semen","squirt","sperm"], "Explicit sexual fluid", 2);
+    add(["orgy","gangbang","threesome","foursome","gang bang","bukkake","bukakke","group sex"], "Explicit sexual scenario", 2);
+    add(["bdsm","bondage","dominatrix","fetish","incest","necrophilia","bestiality","beastiality","pedophile","pedophilia","zoophilia","adultery","voyeur","voyeurism","kink","kinky","masochist","masochism","sadist","sadism","sadomasochism","submission","submissive","discipline","exhibitionism","exhibitionist","incestuous","hebophilia","paraphilia","indecent exposure","streaking","peeping tom","dildo","vibrator","butt plug","anal beads","handcuffs","gag","blindfold","ball gag","harness","chastity belt","bondage gear","latex","slave"], "Explicit sexual theme", 1);
+    add(["hentai","erotica","erotic","tantric","kama sutra","ecstasy"], "Adult content reference", 1);
+    add(["prostitute","prostitution","hooker","pimp","brothel","stripper","strip club","gigolo","sugar daddy","sugar baby","courtesan","concubine","love hotel","milf"], "Sexual commerce", 1);
+    add(["menstruate","menstruation","period","puberty","pubescent","miscarriage","pregnant","pregnancy","fetus","fetuses","erectile","dysfunction","syphilis","herpes","hormone","menstrual","fertility","infertility","insemination","gestation","embryo","placenta","amniotic","postpartum","lactation","midwife","obstetrician","gynecologist","ultrasound","mammogram","breastfeed","breastfeeding","colostrum","mastitis","menopause","andropause","hysterectomy","vasectomy","episiotomy","delivery","consensual","non-consensual","testosterone","estrogen","progesterone","ovum","ova","zygote","blastocyst"], "Clinical / Reproductive terms", 1);
+    add(["drug","drugs","cocaine"], "Illegal substances / Drugs", 2);
  
     return list;
   }
